@@ -8,3 +8,4 @@ inoremap jk <ESC>
 set mouse=a
 set ttymouse=xterm
 set number
+set ruler
