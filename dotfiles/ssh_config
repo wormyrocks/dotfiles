@@ -1,4 +1,4 @@
-Host *
+Host *github*
     Hostname github.com
     User git
     IdentityFile ~/.ssh/git_rsa
