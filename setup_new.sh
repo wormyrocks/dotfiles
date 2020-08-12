@@ -5,7 +5,7 @@ mkdir -p .meta
 PACKAGES="vim zsh tmux ripgrep screen wget curl"
 
 prompt() {
-	read -p $1 " (y/n)"
+	read -p "$1 (y/n)"
 	case $yn in
 		[Yy]* ) return 0;;
 		[Nn]* ) return 1;;
@@ -26,12 +26,14 @@ install_dotfiles(){
 	echo "source-file $workingdir/dotfiles/tmux.conf" >> ~/.tmux.conf
 	echo "so $workingdir/dotfiles/vimrc" >> ~/.vimrc
 	echo "source $workingdir/dotfiles/bashrc" >> ~/.bashrc
+	echo "source $workingdir/dotfiles/bash_aliases" >> ~/.bash_aliases
 	echo "source $workingdir/dotfiles/zshrc" >> ~/.zshrc
+	[[ -e ~/.ssh/config ]] || ln -s $workingdir/dotfiles/ssh_config ~/.ssh/config
 	echo "Dotfiles installed."
 }
 
 update_and_install(){
-	[[ -e .meta/init_update_done ]] {
+	[[ -e .meta/init_update_done ]] && {
 		prompt "Looks like this system has already been updated for the first time. Update again anyways?" && return 0
 	}
 	command -v apt >/dev/null || {
