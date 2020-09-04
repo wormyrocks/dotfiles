@@ -1,0 +1,3 @@
+if [ -z "$TMUX" ]; then
+    tmux attach -t hello || tmux new -s hello
+fi
