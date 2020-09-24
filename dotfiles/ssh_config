@@ -1,3 +1,7 @@
+Host 192.168.*
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+
 Host *github*
     Hostname github.com
     User git
