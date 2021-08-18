@@ -6,6 +6,10 @@ set encoding=utf-8
 syntax on
 inoremap jk <ESC>
 set mouse=a
-set ttymouse=xterm
+set ttymouse=sgr
 set number
 set ruler
+set termguicolors
+set breakindent
+set autoindent
+filetype plugin indent on
