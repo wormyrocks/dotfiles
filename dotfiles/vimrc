@@ -13,3 +13,6 @@ set termguicolors
 set breakindent
 set autoindent
 filetype plugin indent on
+let g:netrw_liststyle = 1
+let g:netrw_banner = 0
+let g:netrw_browse_split = 3
