@@ -1,45 +1,61 @@
-# Bottom screen IDs
+#!/bin/bash
+# fix last bugs with this -> https://wiki.archlinux.org/title/Talk:Calibrating_Touchscreen
 
-BS_IDS=$(xinput --list | grep ELAN9009 | awk -F"id=" '{print $2}' | awk '{print $1}')
-TS_IDS=$(xinput --list | grep ELAN9008 | awk -F"id=" '{print $2}' | awk '{print $1}')
+top_screen_xrr_id=eDP-1
+top_screen_xi_id=ELAN9008
 
-TS_MAT='1 0 0 0 1 0 0 0 1'
-BS_MAT='0.529411764705882 0 0 0 0.291497975708502 0.708502024291498 0 0 1'
+bot_screen_xrr_id=DP-1
+bot_screen_xi_id=ELAN9009
 
-echo Top screen IDs:
-echo ${TS_IDS}
-echo Bottom screen IDs:
-echo ${BS_IDS}
+get_mon_dims () { 
+  sed -rn "s/^$1 connected[^0-9]*([^ ]*).*$/\1/p" $tf1 | sed -rn 's/[x\+]/ /gp' 
+}
+all_dims () {
+  sed -rn 's/^.*current ([0-9]*) x ([0-9]*).*$/\1 \2/p' $tf1
+}
+get_xinput_ids_by () {
+  sed -rn "s/^.*$1.*id=([0-9]*).*$/\1/p" $tf2 
+}
+calc () { 
+  bc -ql <<< ${1}
+}
+get_matrix () {
+  read -r A B a b c d <<< ${1}
+  c0=$(calc "${a}/${A}")
+  c1=$(calc "${c}/${a}")
+  c2=$(calc "${b}/${B}")
+  c3=$(calc "${d}/${B}")
+  echo "${c0} 0 ${c1} 0 ${c2} ${c3} 0 0 1"
+}
 
-# libinput calibration matrix needs to be identity matrix
-for id in ${BS_IDS}
+tf1=$(mktemp)
+xrandr>$tf1
+tf2=$(mktemp)
+xinput --list|grep pointer>$tf2
+total_dims=$(all_dims)
+top_dims=$(get_mon_dims $top_screen_xrr_id)
+bot_dims=$(get_mon_dims $bot_screen_xrr_id)
+top_matrix=$(get_matrix "$total_dims $top_dims")
+bot_matrix=$(get_matrix "$total_dims $bot_dims")
+echo ${total_dims} -${top_dims} -${bot_dims}
+ts_ids=$(get_xinput_ids_by ${top_screen_xi_id})
+bs_ids=$(get_xinput_ids_by ${bot_screen_xi_id})
+echo "top matrix: " ${top_matrix}
+echo "bot matrix: " ${bot_matrix}
+identity_matrix="1 0 0 0 1 0 0 0 1"
+
+for id in ${bs_ids}
 do
-	xinput --set-prop ${id} --type=float "Coordinate Transformation Matrix" ${TS_MAT}
-	xinput --map-to-output ${id} DP-1
-	#xinput --set-prop ${id} --type=float "Coordinate Transformation Matrix" ${BS_MAT}
+	echo ${id} -\> ${bot_matrix}
+	xinput --set-prop ${id} --type=float "Coordinate Transformation Matrix" ${bot_matrix}
+	xinput --set-prop ${id} --type=float "libinput Calibration Matrix" ${identity_matrix}
 done
 
-for id in ${TS_IDS}
+for id in ${ts_ids}
 do
-	xinput --set-prop ${id} --type=float "Coordinate Transformation Matrix" ${TS_MAT}
-	xinput --map-to-output ${id} eDP-1
-	#xinput --set-prop ${id} --type=float "Coordinate Transformation Matrix" ${TS_MAT}
+	echo ${id} -\> ${top_matrix}
+	xinput --set-prop ${id} --type=float "Coordinate Transformation Matrix" ${top_matrix}
+	xinput --set-prop ${id} --type=float "libinput Calibration Matrix" ${identity_matrix}
 done
 
-
-exit
-## Bottom screen
-
-
-xinput --map-to-output 'ELAN9009:00 04F3:2F2A' DP-1
-xinput --set-prop 'ELAN9009:00 04F3:2F2A' --type=float "Coordinate Transformation Matrix" ${mat}
-#xinput --set-prop 'ELAN9009:00 04F3:2F2A Stylus' --type=float "Coordinate Transformation Matrix" ${mat}
-xinput --map-to-output 'ELAN9009:00 04F3:2F2A Stylus Pen (0)' DP-1
-xinput --map-to-output 'ELAN9009:00 04F3:2F2A Stylus Eraser (0)' DP-1
-
-## Top screen
-xinput --map-to-output 'ELAN9008:00 04F3:2F29' eDP-1
-xinput --map-to-output 'ELAN9008:00 04F3:2F29 Stylus' eDP-1
-xinput --map-to-output 'ELAN9008:00 04F3:2F29 Stylus Pen (0)' eDP-1
-xinput --map-to-output 'ELAN9008:00 04F3:2F29 Stylus Eraser (0)' eDP-1
-exit
+rm $tf1 $tf2
